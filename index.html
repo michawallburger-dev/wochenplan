@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Intelligente Wochenplan- und Rezept-Verwaltung für Familien">
+    <meta name="theme-color" content="#2ecc71">
+
+    <title>🍽️ Wochenplan</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🍽️</text></svg>">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        :root {
+            --primary: #2ecc71;
+            --primary-dark: #27ae60;
+            --secondary: #3498db;
+            --danger: #e74c3c;
+            --border: #ddd;
+            --text-light: #666;
+            --bg-light: #fff;
+        }
+
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-light: #1e1e1e;
+            }
+            body {
+                background: #121212;
+                color: #eee;
+            }
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        nav button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+
+        nav button:hover,
+        nav button.active {
+            background: rgba(255,255,255,0.4);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .container {
+            display: none;
+        }
+
+        .container.active {
+            display: block;
+        }
+
+        /* Rezept-Liste */
+        .recipe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .recipe-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .recipe-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .recipe-card h3 {
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .recipe-card .meta {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .recipe-card .tags {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: var(--secondary);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+
+        /* Buttons */
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Forms */
+        form {
+            background: var(--bg-light);
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
+        }
+
+        /* Loading & Empty States */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-light);
+        }
+
+        .empty-state h2 {
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .recipe-grid {
+                grid-template-columns: 1fr;
+            }
+
+            form {
+                padding: 1rem;
+            }
+
+            nav {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🍽️ Wochenplan</h1>
+        <p>Intelligente Essensplanung für die Familie</p>
+        <nav>
+            <button class="nav-btn active" data-view="recipes">Rezepte</button>
+            <button class="nav-btn" data-view="weekplan">Wochenplan</button>
+            <button class="nav-btn" data-view="add-recipe">+ Rezept</button>
+            <button class="nav-btn" data-view="settings">⚙️ Einstellungen</button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Rezepte-Übersicht -->
+        <div id="recipes-view" class="container active">
+            <h2>Meine Rezepte</h2>
+            <div class="empty-state" id="recipes-empty">
+                <h2>📚 Noch keine Rezepte</h2>
+                <p>Beginne damit, dein erstes Rezept hinzuzufügen!</p>
+            </div>
+            <div class="recipe-grid" id="recipe-grid"></div>
+        </div>
+
+        <!-- Wochenplan-Ansicht -->
+        <div id="weekplan-view" class="container">
+            <h2>Diese Woche</h2>
+            <div class="empty-state">
+                <p>Wochenplan-View kommt in Phase 2 🚀</p>
+            </div>
+        </div>
+
+        <!-- Rezept hinzufügen -->
+        <div id="add-recipe-view" class="container">
+            <h2>Neues Rezept</h2>
+            <form id="recipe-form">
+                <div class="form-group">
+                    <label for="recipe-title">Rezept-Name *</label>
+                    <input type="text" id="recipe-title" placeholder="z.B. Spaghetti Bolognese" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-source">Quelle</label>
+                    <input type="text" id="recipe-source" placeholder="URL oder Kochbuch">
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-cooktime">Kochzeit (Minuten)</label>
+                    <input type="number" id="recipe-cooktime" placeholder="30">
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-difficulty">Schwierigkeitsgrad</label>
+                    <select id="recipe-difficulty">
+                        <option value="easy">Einfach</option>
+                        <option value="medium">Mittel</option>
+                        <option value="hard">Schwierig</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-ingredients">Zutaten (eine pro Zeile)</label>
+                    <textarea id="recipe-ingredients" placeholder="500g Hackfleisch&#10;400g Tomaten&#10;..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-instructions">Anleitung</label>
+                    <textarea id="recipe-instructions" placeholder="1. Fleisch anbraten...&#10;2. ..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-photos">Foto hochladen</label>
+                    <input type="file" id="recipe-photos" accept="image/*" multiple>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-tags">Tags (komma-getrennt)</label>
+                    <input type="text" id="recipe-tags" placeholder="schnell, fleisch, liebling">
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-children-notes">Notizen für Kinder-Variante</label>
+                    <textarea id="recipe-children-notes" placeholder="z.B. ohne Knoblauch, kleinere Portion"></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary">💾 Rezept speichern</button>
+            </form>
+        </div>
+
+        <!-- Einstellungen -->
+        <div id="settings-view" class="container">
+            <h2>⚙️ Einstellungen</h2>
+            <div class="empty-state">
+                <p>Einstellungen (GitHub Sync, etc.) kommen in Phase 4 🚀</p>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="src/app.js"></script>
+</body>
+</html>
